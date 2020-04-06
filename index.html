@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Sky Full of Stars - JS 4.14</title>
+
+  <link rel="stylesheet"  href="https://js.arcgis.com/4.14/esri/themes/dark/main.css"/>
+  <script src="https://js.arcgis.com/4.14/"></script>
+
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+	#paneDiv {
+      position: absolute;
+      top: 12px;
+      right: 0;
+      width: 380px;
+      padding: 0 12px 0 12px;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid white;
+      color: black;
+	  text-align: center;
+	  font-size: 12pt;
+    }
+	#panel {
+      position: absolute;
+      top: 35px;
+      right: 0;
+      width: 380px;
+      padding: 0 12px 0 12px;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid white;
+      color: black;
+	  text-align: center;
+	  font-size: 12pt;
+    }
+	
+	#ButtonDiv {
+        position: absolute;
+        bottom: 40px;
+        width: 100%;
+        text-align: center;
+        background-color: transparent;
+        color: white;
+      }
+
+      .esri-button-overwrite {
+        width: auto;
+        display: table-cell;
+        margin: 4px;
+        background-color: white;
+        color: #0079c1;
+      }
+	  
+  </style>
+  <script type="text/plain" id="starname">
+    var NameStar = $feature.Stars_Named_COMNAME;
+	  var labels = [NameStar];
+      return labels
+    </script>
+  <script>
+    require([
+        "esri/Map",
+        "esri/views/MapView",
+		    "esri/layers/FeatureLayer",
+		    "esri/widgets/Legend",
+		    "esri/widgets/Expand",
+        "dojo/domReady!"
+      ],
+      function(Map, MapView, FeatureLayer, Legend, Expand) {
+		const minScale = 20;
+        
+		var map = new Map({
+		});
+		
+        var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [95.8, -6.3],
+        zoom: 12,
+		// set highlightOptions like color and fillOpacity
+        highlightOptions: {
+            color: [255, 241, 58],
+            fillOpacity: 0.4
+          }
+        });
+		
+		var template = { // autocasts as new PopupTemplate()
+        title: "Star Name",
+        content: "{Stars_Named_COMNAME}"
+        };
+		
+		const legend = new Expand({
+          content: new Legend({
+            view: view,
+            style: "card", // other styles include 'classic'
+			      title: "Map Star"
+          }),
+          view: view,
+          expanded: true
+        });
+        view.ui.add(legend, "bottom-left");
+		
+		var label_template = { // autocasts as new LabelTemplate()
+        labelExpressionInfo: {
+                expression: document.getElementById("starname").text
+              },
+              labelPlacement: "center-right",
+              minScale: minScale,
+              symbol: {
+                type: "text",  // autocasts as new TextSymbol()
+                font: {
+                  size: 9,
+                  family: "Noto Sans"
+                },
+                horizontalAlignment: "left",
+                color: "#fff"
+              }
+        };
+				
+		// Add feature layer
+
+    var layer_constell = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/6",
+		  title: "Constell"
+        });
+		var layer_graticul = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/5",
+		  title: "Graticul"
+        });
+		var layer_milkyway = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/4",
+		  title: "Milky Way"
+        });
+		var layer_refline = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/3",
+		  title: "Refline"
+        });
+		var layer_asterism = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/2",
+		  title: "Asterism"
+        });
+		var layer_constellation = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/1",
+		  title: "Constellations"
+        });
+		var layer_star = new FeatureLayer({
+          url: "https://services8.arcgis.com/mpSDBlkEzjS62WgX/ArcGIS/rest/services/MapStar_WFL1/FeatureServer/0",
+		  outFields: ["*"],
+          popupTemplate: template,
+		  title: "Stars Name"
+		});
+		      
+        map.add(layer_constell);
+		map.add(layer_graticul);
+		map.add(layer_milkyway);
+		map.add(layer_refline);
+		map.add(layer_asterism);
+		map.add(layer_constellation);
+		map.add(layer_star);
+		
+		var consGeometries;
+		var ConsSelect = document.getElementById("cons_name");
+		// query all features from the asterism layer
+        view
+          .when(function() {
+            return layer_asterism.when(function() {
+              var query = layer_asterism.createQuery();
+              return layer_asterism.queryFeatures(query);
+            });
+          })
+          .then(getValues)
+          .then(getUniqueValues)
+          .then(addToSelect)
+		  .then(ZoomTo);
+		
+		function ZoomTo(){
+		mapView.goTo(fullExtent).then(function () {
+			if (!mapView.extent.contains(fullExtent))
+				mapView.zoom -= 1;
+		})}
+		
+		// return an array of all the values in the
+        // CONSNAME field of the asterism layer
+        function getValues(response) {
+          var features = response.features;
+          var values = features.map(function(feature) {
+            return feature.attributes.CONSNAME;
+          });
+          return values;
+        }
+		// return an array of unique values in
+        // the CONSNAME field of the asterism layer
+        function getUniqueValues(values) {
+          var uniqueValues = [];
+
+          values.forEach(function(item, i) {
+            if (
+              (uniqueValues.length < 1 || uniqueValues.indexOf(item) === -1) &&
+              item !== ""
+            ) {
+              uniqueValues.push(item);
+            }
+          });
+          return uniqueValues;
+        }
+		// Add the unique values to the cons name
+        // select element. This will allow the user
+        // to filter constellation by name.
+        function addToSelect(values) {
+          values.sort();
+          values.forEach(function(value) {
+            var option = document.createElement("option");
+            option.text = value;
+            ConsSelect.add(option);
+          });
+
+          return setConsDefinitionExpression(ConsSelect.value);
+        }
+
+		// set the definition expression on the asterism
+        // layer to reflect the selection of the user
+        function setConsDefinitionExpression(newValue) {
+          layer_asterism.definitionExpression = "CONSNAME = '" + newValue + "'";
+
+          if (!layer_asterism.visible) {
+            layer_asterism.visible = true;
+          }
+
+          return queryForConsGeometries();
+        }
+		// Get all the geometries of the asterism layer
+        // the createQuery() method creates a query
+        // object that respects the definitionExpression
+        // of the layer
+        function queryForConsGeometries() {
+          var consQuery = layer_asterism.createQuery();
+
+          return layer_asterism.queryFeatures(consQuery).then(function(response) {
+            consGeometries = response.features.map(function(feature) {
+              return feature.geometry;
+            });
+
+            return consGeometries;
+          });
+        }
+		
+		// set a new definitionExpression on the asterism layer
+        ConsSelect.addEventListener("change", function() {
+          var type = ConsSelect.value;
+          setConsDefinitionExpression(type);
+		      });
+      });
+  </script>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+   <div id="paneDiv">Stars Map</div>
+   <div id="panel">
+	 How many stars did you already know?<br>
+   </div>
+   <div id="ButtonDiv" class="esri-widget">
+	  <div id="drop-downs">
+        <h3> Select Constellations Name:
+        <select id="cons_name" class="esri-widget"></select></h3>
+      </div>
+    </div>
+    
+</body>
+
+</html>
