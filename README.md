@@ -1,4 +1,4 @@
 # nightsky
 Stars Map
 
-[Link](citrahs.github.io/nightsky)
+[Link](https://citrahs.github.io/nightsky)
